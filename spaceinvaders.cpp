@@ -7,6 +7,7 @@ struct ship {
   int speed;
   Vector2 size;
   bool alive;
+  int lives;
 };
 
 struct invader {
@@ -30,8 +31,15 @@ int tick = 0;
 int tick_counter = 0;
 int tickmove;
 int tickshoot = 0;
+int tickalienarray = 0;
 
 std::vector<Vector3> projvector;
+std::vector<Vector3> alienprojvector;
+
+void gameover(int screenWidth, int screenHeight) {
+  ClearBackground(BLACK);
+  DrawText("GAMEOVER", screenWidth / 2, screenHeight / 2, 48, LIGHTGRAY);
+}
 
 int main(void) {
   
@@ -46,6 +54,7 @@ int main(void) {
   player.pos = (Vector2){ 0, screenHeight - 32};
   player.size = (Vector2){ 16, 16};
   player.alive = true;
+  player.lives = 3;
   
   invader alien;
   alien.pos = (Vector2){ 64, 50};
@@ -60,8 +69,10 @@ int main(void) {
   proj.pos = (Vector2){0,0};
 
   Vector3 projvarname;
+  Vector3 alienprojvarname;
 
   int p = 0;
+  int ap = 0;
   //Vector3 alienvarname;
   Vector3 alienvarname = {alien.pos.x, alien.pos.y, alien.alive};
   Vector3 alienarray[64] = { alienvarname };
@@ -140,6 +151,16 @@ int main(void) {
        }   //projvector[pi].z = 0;
       }
 
+    int api = 0;
+    for (api = 0; api < ap; api += 1) {
+      if (alienprojvector[api].z == 1) {
+        if (alienprojvector[api].y < player.pos.y + player.size.y && alienprojvector[api].y > player.pos.y && alienprojvector[api].x > player.pos.x && alienprojvector[api].x < player.pos.x + player.size.x) {
+          alienprojvector[api].z = 0;
+          player.lives -= 1;
+        }
+      }
+    }
+
     tick += 1;
     if (tick > 50) {
       tick_counter += 1;
@@ -160,7 +181,7 @@ int main(void) {
           //moveright = false;
         }
       }
-        std::cout<<tick_counter<<'\n';
+        std::cout<<"move: "<<tick_counter<<'\n';
     }
 
     //if (alienarray[x * y - 1].x >= screenWidth ) {
@@ -178,14 +199,23 @@ int main(void) {
           moveright = true;
         }
       }
-        std::cout<<tick_counter<<'\n';
+        std::cout<<"move: "<<tick_counter<<'\n';
     }
 
     tickshoot += 1;
+    tickalienarray += 1;
 
-    if (tickshoot > 50) {
+    if (tickalienarray > x * y) {
+      tickalienarray = 0;
+    }
+
+    if (tickshoot > 75 && alienarray[tickalienarray].z == 1) {
       //insert array for alien shooting
+      alienprojvarname = (Vector3){alienarray[tickalienarray].x, alienarray[tickalienarray].y, proj.live};
+      alienprojvector.emplace(alienprojvector.begin(),alienprojvarname);
+      ap += 1;
       tickshoot = 0;        
+      std::cout<<"shoot: "<<ap<<alienprojvector.size()<<'\n';
     }
     //if (alienarray[0].x <= 2 * alien.size.x) {
       //moveright = true;
@@ -193,45 +223,49 @@ int main(void) {
 
       ClearBackground(DARKBLUE);
       DrawFPS(10,10);
+      DrawText(TextFormat("Lives: %i", player.lives), screenWidth - 100, 10, 24, LIGHTGRAY);
       DrawRectangle(player.pos.x, player.pos.y, player.size.x, player.size.y, LIGHTGRAY); //Player render
-      //DrawRectangle(alien.pos.x, alien.pos.y, alien.size.x, alien.size.y, PINK); //Alien render
 
-      //for (y = 0; y < 3; y+=1) {
-        //for (x = 0; x < 4; x+=1) {
-      //DrawRectangle(alien.pos.x + alien.size.x * x, alien.pos.y + alien.size.y * y, alien.size.x, alien.size.y, PURPLE);
-        //}  
-      //}
-
-      //i=0;//rows
-      //n = 0;//columns
-    //for (n = 0; n < 2; n += 1) {
-    for(i = 0; i < x * y; i += 1) {
-        if (alienarray[i].z == 1) {
-          DrawRectangle(alienarray[i].x,
-                        alienarray[i].y, alien.size.x,
-                        alien.size.y, PURPLE);
+        for(i = 0; i < x * y; i += 1) {
+            if (alienarray[i].z == 1) {
+              DrawRectangle(alienarray[i].x,
+                            alienarray[i].y, alien.size.x,
+                            alien.size.y, PURPLE);
+            }
         }
-    }
 
-    
-    //pi = 0;
-    for(pi = 0; pi < p; pi += 1){
-        if (projvector[pi].z == 1) {
-          DrawRectangle(projvector[pi].x,projvector[pi].y,proj.size.x,proj.size.y,RED);
-        }  
-        projvector[pi].y -= proj.speed;
-        if(projvector[pi].y < 0) {
-          projvector.pop_back();
-          p -= 1;
-          std::cout <<projvector.size()<<'\n';
+        for (api = 0; api < ap; api += 1) {
+            if(alienprojvector[api].z == 1){
+              DrawRectangle(alienprojvector[api].x, alienprojvector[api].y, proj.size.x, proj.size.y, GREEN);
+            }
+            alienprojvector[api].y += proj.speed;
+            if (alienprojvector[api].y > screenHeight) {
+              alienprojvector.pop_back();
+              std::cout<<"alienprojvector size: "<<alienprojvector.size()<<'\n';
+              ap -= 1;
+            }
         }
-    }
+        //pi = 0;
+        for(pi = 0; pi < p; pi += 1){
+            if (projvector[pi].z == 1) {
+              DrawRectangle(projvector[pi].x,projvector[pi].y,proj.size.x,proj.size.y,RED);
+            }  
+            projvector[pi].y -= proj.speed;
+            if(projvector[pi].y < 0) {
+              projvector.pop_back();
+              p -= 1;
+              std::cout <<projvector.size()<<'\n';
+            }
+        }
 
         EndDrawing();
-
+    if (player.lives == 0) {
+      int gameover(int);
+    }
   }
 
   CloseWindow();
   return 0;
-};
+}
+
 
